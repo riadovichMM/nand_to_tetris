@@ -324,7 +324,3 @@ The first 16 registers can be addressed using the assembly as R0-R15. However, V
 |R5-R12|-|Holds content of _temp_ segment|
 |R13-R15|-|Can be used as general-purpose registers|
 
-# Future
-
-Uhm, I stopped working on this because I got bored.
-To be continued...
