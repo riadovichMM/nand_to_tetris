@@ -1,0 +1,39 @@
+// computes 3+5*8
+function main 0
+push constant 3
+push constant 8
+push constant 5
+call mult 2
+add
+return
+
+function mult 2
+push constant 0
+pop local 0
+push constant 1
+pop local 1
+label LOOP
+push local 1
+push argument 1
+//computes the product into local 0
+label END
+push local 0
+return 
+
+
+
+////////
+
+
+
+def main():
+    add(1)
+
+
+def add(x):
+    y = 5
+    return y+x
+
+
+
+
