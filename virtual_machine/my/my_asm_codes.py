@@ -369,3 +369,85 @@ IF_GOTO_COMMAND = [
     'D;JNE'
 ]
 
+
+
+# functions 
+FUNCTION_PUSH_LOCAL_VAR_COMMAND = [
+    '@SP',
+    'A=M',
+    'M=0',
+    '@SP',
+    'M=M+1'
+]
+
+
+CALL_COMMAND = [
+    # push return address
+    '@:return_address',
+    'D=A',
+    '@SP',
+    'A=M',
+    'M=D',
+    '@SP',
+    'M=M+1',
+
+    #push LCL
+    '@LCL',
+    'D=M',
+    '@SP',
+    'A=M',
+    'M=D',
+    '@SP',
+    'M=M+1',
+
+    #push ARG
+    '@ARG',
+    'D=M',
+    '@SP',
+    'A=M',
+    'M=D',
+    '@SP',
+    'M=M+1',
+
+    #push this
+    '@THIS',
+    'D=M',
+    '@SP',
+    'A=M',
+    'M=D',
+    '@SP',
+    'M=M+1',
+
+    #push that
+    '@THAT',
+    'D=M',
+    '@SP',
+    'A=M',
+    'M=D',
+    '@SP',
+    'M=M+1',
+
+    #ARG = SP-n-5
+    '@SP',
+    'D=M',
+    '@:n_args',
+    'D=D-A',
+    '@5',
+    'D=D-A',
+    '@ARG',
+    'M=D'
+
+    #LCL = SP
+    '@SP',
+    'D=M',
+    '@LCL',
+    'M=D',
+
+    # goto to function
+    '@function_name',
+    '0;JMP',
+
+    '(:return_address)',
+]
+
+

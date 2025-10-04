@@ -25,7 +25,8 @@ from my_asm_codes import (
     PUSH_CONSTANT_COMMAND,
     LABEL_COMMAND,
     GOTO_COMMAND,
-    IF_GOTO_COMMAND
+    IF_GOTO_COMMAND,
+    FUNCTION_PUSH_LOCAL_VAR_COMMAND
 )
 
 #vm_code arrays
@@ -33,11 +34,10 @@ vm_code = []
 vm_code_keys = []
 
 asm_code = []
-
 index = 0
 
 def get_vm_code_from_file():
-    f = open("./file_code.vm")
+    f = open("./my_vm_code.vm")
     for line in f:
         vm_code.append(line.replace("\n", ""))
     f.close()
@@ -101,6 +101,19 @@ def analysis_and_generate_code():
                     copy_code(POP_STATIC_COMMAND, 'BasicTest.' + str(vm_command[2]))
                 if vm_command[1] == 'pointer':
                     copy_code(POP_POINTER_COMMAND, vm_command[2])
+            if vm_command[0] == 'function':
+                function_asm = [
+                    '({function_name})'.format(function_name = vm_command[1]),
+                ]
+
+                for _ in range(int(vm_command[2])):
+                    for code in FUNCTION_PUSH_LOCAL_VAR_COMMAND:
+                        function_asm.append(code)
+                copy_code(function_asm, None)
+
+            if vm_command[0] == 'call':
+                
+                pass
 
 
         if len(vm_command) == 1:
@@ -108,28 +121,20 @@ def analysis_and_generate_code():
                 copy_code(ADD_COMMAND, None)
             if vm_command[0] == 'eq':
                 copy_code(EQ_COMMAND, None)
-                # index+=1
             if vm_command[0] == 'lt':
                 copy_code(LT_COMMAND, None)
-                # index+=1
             if vm_command[0] == 'gt':
                 copy_code(GT_COMMAND, None)
-                # index+=1
             if vm_command[0] == 'sub':
                 copy_code(SUB_COMMAND, None)
-                # index+=1
             if vm_command[0] == 'neg':
                 copy_code(NEG_COMMAND, None)
-                # index+=1
             if vm_command[0] == 'and':
                 copy_code(AND_COMMAND, None)
-                # index+=1
             if vm_command[0] == 'or':
                 copy_code(OR_COMMAND, None)
-                # index+=1
             if vm_command[0] == 'not':
                 copy_code(NOT_COMMAND, None)
-                # index+=1
 
         if len(vm_command) == 2:
             if vm_command[0] == 'label':
@@ -146,8 +151,6 @@ def main():
     split_by_keys()
     analysis_and_generate_code()
     create_asm_file()
-
-    print(asm_code)
 
 
 if __name__ == "__main__":
