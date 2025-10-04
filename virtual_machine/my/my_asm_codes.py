@@ -382,6 +382,7 @@ FUNCTION_PUSH_LOCAL_VAR_COMMAND = [
 
 
 CALL_COMMAND = [
+    # call function n_args
     # push return address
     '@:return_address',
     'D=A',
@@ -431,9 +432,9 @@ CALL_COMMAND = [
     '@SP',
     'D=M',
     '@:n_args',
-    'D=D-A',
+    'D=D-A', #261
     '@5',
-    'D=D-A',
+    'D=D-A', #256 = 261-5
     '@ARG',
     'M=D'
 
@@ -444,7 +445,7 @@ CALL_COMMAND = [
     'M=D',
 
     # goto to function
-    '@function_name',
+    '@:function_name',
     '0;JMP',
 
     '(:return_address)',

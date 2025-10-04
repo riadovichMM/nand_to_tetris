@@ -26,7 +26,8 @@ from my_asm_codes import (
     LABEL_COMMAND,
     GOTO_COMMAND,
     IF_GOTO_COMMAND,
-    FUNCTION_PUSH_LOCAL_VAR_COMMAND
+    FUNCTION_PUSH_LOCAL_VAR_COMMAND,
+    CALL_COMMAND
 )
 
 #vm_code arrays
@@ -101,19 +102,24 @@ def analysis_and_generate_code():
                     copy_code(POP_STATIC_COMMAND, 'BasicTest.' + str(vm_command[2]))
                 if vm_command[1] == 'pointer':
                     copy_code(POP_POINTER_COMMAND, vm_command[2])
+
+
             if vm_command[0] == 'function':
                 function_asm = [
                     '({function_name})'.format(function_name = vm_command[1]),
                 ]
-
                 for _ in range(int(vm_command[2])):
                     for code in FUNCTION_PUSH_LOCAL_VAR_COMMAND:
                         function_asm.append(code)
                 copy_code(function_asm, None)
 
+
             if vm_command[0] == 'call':
-                
-                pass
+                for line in CALL_COMMAND:
+                    line_code = line.replace(':return_address', 'function_return_' + str(vm_command[1]) + str(index))
+                    line_code = line_code.replace(':n_args', str(vm_command[2]))
+                    line_code = line_code.replace(':function_name', str(vm_command[1]))
+                    asm_code.append(line_code)
 
 
         if len(vm_command) == 1:
