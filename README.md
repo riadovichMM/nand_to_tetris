@@ -1,3 +1,5 @@
+# Be flexible, break rules
+
 # nand2tetris
 This project is from the course [nand2tetris](https://www.nand2tetris.org/). From building logic gates to writing a high level language and an operating system in it, the resultant is a modern-day 16-bit computer which I have documented below. 
 
