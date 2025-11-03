@@ -310,7 +310,11 @@
     <a name="circuit" val="cpu"/>
     <a name="circuitnamedboxfixedsize" val="true"/>
     <a name="simulationFrequency" val="1.0"/>
-    <comp lib="0" loc="(1040,220)" name="Pin">
+    <comp lib="0" loc="(100,680)" name="Pin">
+      <a name="appearance" val="classic"/>
+      <a name="label" val="reset"/>
+    </comp>
+    <comp lib="0" loc="(1040,230)" name="Pin">
       <a name="appearance" val="classic"/>
       <a name="facing" val="west"/>
       <a name="label" val="data_output_bus"/>
@@ -337,18 +341,43 @@
       <a name="label" val="write_enable"/>
       <a name="output" val="true"/>
     </comp>
-    <comp lib="0" loc="(160,470)" name="Pin">
-      <a name="appearance" val="classic"/>
-      <a name="label" val="reset"/>
+    <comp lib="0" loc="(110,470)" name="Tunnel">
+      <a name="label" val="clk"/>
     </comp>
-    <comp lib="0" loc="(220,210)" name="Pin">
+    <comp lib="0" loc="(180,270)" name="Pin">
       <a name="appearance" val="classic"/>
       <a name="label" val="instr_bus"/>
       <a name="width" val="16"/>
     </comp>
-    <comp lib="0" loc="(220,350)" name="Pin">
+    <comp lib="0" loc="(200,560)" name="Pin">
       <a name="appearance" val="classic"/>
-      <a name="label" val="data_bus"/>
+      <a name="label" val="data_bus_in"/>
+      <a name="width" val="16"/>
+    </comp>
+    <comp lib="0" loc="(230,390)" name="Splitter">
+      <a name="appear" val="center"/>
+      <a name="fanout" val="16"/>
+      <a name="incoming" val="16"/>
+    </comp>
+    <comp lib="0" loc="(370,150)" name="Tunnel">
+      <a name="facing" val="north"/>
+      <a name="label" val="clk"/>
+    </comp>
+    <comp lib="0" loc="(370,310)" name="Tunnel">
+      <a name="facing" val="north"/>
+      <a name="label" val="clk"/>
+    </comp>
+    <comp lib="0" loc="(80,470)" name="Pin">
+      <a name="appearance" val="classic"/>
+      <a name="label" val="clk"/>
+    </comp>
+    <comp lib="1" loc="(290,350)" name="NOT Gate">
+      <a name="facing" val="north"/>
+    </comp>
+    <comp lib="2" loc="(310,260)" name="Multiplexer">
+      <a name="width" val="16"/>
+    </comp>
+    <comp lib="2" loc="(620,270)" name="Multiplexer">
       <a name="width" val="16"/>
     </comp>
     <comp lib="4" loc="(400,230)" name="Register">
@@ -362,5 +391,37 @@
       <a name="width" val="16"/>
     </comp>
     <comp loc="(900,230)" name="alu"/>
+    <wire from="(170,20)" to="(170,210)"/>
+    <wire from="(170,20)" to="(340,20)"/>
+    <wire from="(170,210)" to="(270,210)"/>
+    <wire from="(180,270)" to="(210,270)"/>
+    <wire from="(210,270)" to="(210,390)"/>
+    <wire from="(210,270)" to="(280,270)"/>
+    <wire from="(210,390)" to="(230,390)"/>
+    <wire from="(250,460)" to="(290,460)"/>
+    <wire from="(270,210)" to="(270,250)"/>
+    <wire from="(270,250)" to="(280,250)"/>
+    <wire from="(290,280)" to="(290,290)"/>
+    <wire from="(290,290)" to="(290,350)"/>
+    <wire from="(290,290)" to="(340,290)"/>
+    <wire from="(290,380)" to="(290,460)"/>
+    <wire from="(310,260)" to="(400,260)"/>
+    <wire from="(340,100)" to="(400,100)"/>
+    <wire from="(340,20)" to="(340,100)"/>
+    <wire from="(340,20)" to="(970,20)"/>
+    <wire from="(340,280)" to="(340,290)"/>
+    <wire from="(340,280)" to="(400,280)"/>
+    <wire from="(370,140)" to="(370,150)"/>
+    <wire from="(370,140)" to="(400,140)"/>
+    <wire from="(370,300)" to="(370,310)"/>
+    <wire from="(370,300)" to="(400,300)"/>
+    <wire from="(460,260)" to="(590,260)"/>
+    <wire from="(620,270)" to="(630,270)"/>
+    <wire from="(630,250)" to="(630,270)"/>
+    <wire from="(630,250)" to="(680,250)"/>
+    <wire from="(80,470)" to="(110,470)"/>
+    <wire from="(900,230)" to="(970,230)"/>
+    <wire from="(970,20)" to="(970,230)"/>
+    <wire from="(970,230)" to="(1040,230)"/>
   </circuit>
 </project>
