@@ -146,6 +146,38 @@ class VM:
                 '@SP',
                 'M=M+1',
             ])
+
+        if command == 'eq':
+            self.put_to_asm_code([
+                '@SP',
+                'M=M-1',
+                'A=M',
+                'D=M',
+
+                '@SP',
+                'M=M-1',
+                'A=M',
+                'D=M-D',
+
+                f'@TRUE_EQ_X_{self.global_uuid_command}',
+                'D;JEQ',
+
+                '@SP',
+                'A=M',
+                'M=0',
+
+                f'@END_EQ_X_{self.global_uuid_command}',
+                '0;JMP',
+
+                f'(TRUE_EQ_X_{self.global_uuid_command})',
+                '@SP',
+                'A=M',
+                'M=-1',
+
+                f'(END_EQ_X_{self.global_uuid_command})',
+                '@SP',
+                'M=M+1',
+            ])
         self.global_uuid_command+=1
 
 
