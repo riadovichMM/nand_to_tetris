@@ -5,11 +5,11 @@ class VM:
         self.asm_code = []
         self.global_uuid_command = 0
 
-    def open_file_and_get_code(self):
-        file = open('./vm_code/code.vm', 'r+')
+    def open_file_and_get_code(self, filename):
+        self.filename = filename.split('.')[0]
+        file = open('./vm_code/' + self.filename + '.vm', 'r+')
         self.vm_code = [line.strip() for line in file.readlines()]
         file.close()
-        print(self.vm_code)
 
     def put_to_asm_code(self, code):
         for line in code:
@@ -31,7 +31,37 @@ class VM:
         line_code_part = line.split(' ')
         if line_code_part[0] == 'push':
             if line_code_part[1] == 'constant':
-                self.put_to_asm_code([f'@{line_code_part[2]}', 'D=A', '@SP', 'A=M', 'M=D', '@SP', 'M=M+1'])
+                self.put_to_asm_code([
+                    f'@{line_code_part[2]}',
+                    'D=A',
+                    '@SP',
+                    'A=M',
+                    'M=D',
+                    '@SP',
+                    'M=M+1'
+                ])
+
+            if line_code_part[1] == 'static':
+                self.put_to_asm_code([
+                    f'@{self.filename}.{line_code_part[2]}',
+                    'D=M',
+                    '@SP',
+                    'A=M',
+                    'M=D',
+                    '@SP',
+                    'M=M+1'
+                ])
+
+        if line_code_part[0] == 'pop':
+            if line_code_part[1] == 'static':
+                self.put_to_asm_code([
+                    '@SP',
+                    'M=M-1',
+                    'A=M',
+                    'D=M',
+                    f'@{self.filename}.{line_code_part[2]}',
+                    'M=D',
+                ])
 
 
     def arithmetic_logic(self, command):
@@ -184,7 +214,7 @@ class VM:
 
 
     def write_to_asm_file(self):
-        file = open('./asm_code/output.asm', 'w+')
+        file = open('./asm_code/' + self.filename + '.asm', 'w+')
         for line in self.asm_code:
             file.write(line + '\n')
         file.close()
@@ -193,7 +223,7 @@ class VM:
 
 def main():
     vm = VM()
-    vm.open_file_and_get_code()
+    vm.open_file_and_get_code('code.vm')
     vm.analys()
     vm.write_to_asm_file()
     print('finish')
