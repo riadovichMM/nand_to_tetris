@@ -57,9 +57,124 @@ class vm_translator:
 
                 self.write_asm('@SP')
                 self.write_asm('M=M+1')
+            if segment in ['local', 'argument', 'this', 'that']:
+                segments = {
+                    'local': '@LCL',
+                    'argument': '@ARG',
+                    'this': '@THIS',
+                    'that': '@THAT',
+                }
+                self.write_asm(segments[segment])
+                self.write_asm('D=M')
+
+                self.write_asm(f'@{index}')
+                self.write_asm('D=D+A')
+                self.write_asm('A=D')
+
+                self.write_asm('D=M')
+
+                self.write_asm('@SP')
+                self.write_asm('A=M')
+                self.write_asm('M=D')
+
+                self.write_asm('@SP')
+                self.write_asm('M=M+1')
+            if segment in ['temp', 'pointer']:
+                segments = {
+                    'temp': '@5',
+                    'pointer': '@3'
+                }
+                self.write_asm(f'@{index}')
+                self.write_asm('D=A')
+
+                self.write_asm(segments[segment])
+                self.write_asm('D=D+A')
+
+                self.write_asm('A=D')
+                self.write_asm('D=M')
+
+                self.write_asm('@SP')
+                self.write_asm('A=M')
+                self.write_asm('M=D')
+
+                self.write_asm('@SP')
+                self.write_asm('M=M+1')
+            if segment == 'static':
+                self.write_asm(f'@{self.clean_file_name}.{index}')
+                self.write_asm('D=M')
+
+                self.write_asm('@SP')
+                self.write_asm('A=M')
+                self.write_asm('M=D')
+
+                self.write_asm('@SP')
+                self.write_asm('M=M+1')
 
         if command == 'pop':
-            pass
+            if segment in ['local', 'argument', 'this', 'that']:
+                
+                segments = {
+                    'local': '@LCL',
+                    'argument': '@ARG',
+                    'this': '@THIS',
+                    'that': '@THAT',
+                }
+
+                self.write_asm(segments[segment])
+                self.write_asm('D=M')
+
+                self.write_asm(f'@{index}')
+                self.write_asm('D=D+A')
+
+                self.write_asm('@R13')
+                self.write_asm('M=D')
+
+                self.write_asm('@SP')
+                self.write_asm('M=M-1')
+
+                self.write_asm('@SP')
+                self.write_asm('A=M')
+                self.write_asm('D=M')
+
+                self.write_asm('@R13')
+                self.write_asm('A=M')
+                self.write_asm('M=D')
+
+            if segment in ['temp', 'pointer']:
+                segments = {
+                    'temp': '@5',
+                    'pointer': '@3'
+                }
+                self.write_asm(f'@{index}')
+                self.write_asm('D=A')
+
+                self.write_asm(segments[segment])
+                self.write_asm('D=D+A')
+
+                self.write_asm('@R13')
+                self.write_asm('M=D')
+
+                self.write_asm('@SP')
+                self.write_asm('M=M-1')
+
+                self.write_asm('@SP')
+                self.write_asm('A=M')
+                self.write_asm('D=M')
+
+                self.write_asm('@R13')
+                self.write_asm('A=M')
+                self.write_asm('M=D')
+
+            if segment == 'static':
+                self.write_asm('@SP')
+                self.write_asm('M=M-1')
+
+                self.write_asm('@SP')
+                self.write_asm('A=M')
+                self.write_asm('D=M')
+
+                self.write_asm(f'@{self.clean_file_name}.{index}')
+                self.write_asm('M=D')
 
 
 
