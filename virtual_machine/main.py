@@ -16,12 +16,16 @@ def main():
 
     files_and_codes = {}
 
+    flag = True
+
     for file in files:
         vm_obj = vm_translator(file, dir_path)
+        if flag:
+            vm_obj.bootstrap()
         vm_obj.translate()
         files_and_codes[file] = vm_obj.get_code()
+        flag = False
 
-    print(files_and_codes)
     generate_one_output(files_and_codes)
 
 

@@ -12,12 +12,13 @@ class vm_translator:
         self.id_count = 0
         self.current_function = ''
 
+
         self.open_file_get_code()
 
     # service function
 
     def open_file_get_code(self):
-        file = open(os.path.join(self.directory, self.file_name), 'r+')
+        file = open(os.path.join(self.directory, self.file_name), 'r')
         for line in file:
             if line.startswith('//'):
                 continue
@@ -39,10 +40,25 @@ class vm_translator:
         return self.asm_code
 
     # translate functions
+
+    def bootstrap(self):
+        self.write_asm('@256')
+        self.write_asm('D=A')
+        self.write_asm('@SP')
+        self.write_asm('M=D')
+        self.function_calling_command(['call', 'Sys.init', '0'])
+
+
     def translate(self):
         for line in self.vm_code:
-            parts = line.split(' ')
+            parts = line.split()
+            print(parts)
+            if len(parts) > 3:
+                print('parts', parts)
 
+            # Если строка вдруг оказалась пустой (на всякий случай)
+            if not parts:
+                continue
             command = parts[0]
             if parts[0] in ['push', 'pop']:
                 self.push_pop_command(parts)
@@ -55,7 +71,6 @@ class vm_translator:
             self.id_count += 1
 
     def push_pop_command(self, parts):
-        print(parts)
         command, segment, index = parts
 
         if command == 'push':
@@ -284,11 +299,16 @@ class vm_translator:
     def program_flow_command(self, parts):
         command = parts[0]
         label = parts[1]
+
+        if not label:
+            raise Exception(f"Empty label in command: {parts}")
+    
         if command == 'label':
             if self.current_function:
                 self.write_asm(f'({self.current_function}${label})')
             else:
                 self.write_asm(f'({label})')
+
         if command == 'goto':
             if self.current_function:
                 self.write_asm(f'@{self.current_function}${label}')
@@ -316,18 +336,20 @@ class vm_translator:
 
         if command == 'function':
             function_name = parts[1]
+            self.current_function = function_name
             local_vars = parts[2]
+
             self.write_asm(f'({function_name})')
             self.write_asm(f'@{local_vars}')
             self.write_asm('D=A')
             self.write_asm('@R13')
             self.write_asm('M=D')
 
-            self.write_asm(f'(LOOP_{self.id_count})')
+            self.write_asm(f'(LOOP_{self.clean_file_name}.{self.id_count})')
             self.write_asm('@R13')
             self.write_asm('D=M')
 
-            self.write_asm(f'@END_LOOP_{self.id_count}')
+            self.write_asm(f'@END_LOOP_{self.clean_file_name}.{self.id_count}')
             self.write_asm('D;JEQ')
 
             self.write_asm('@SP')
@@ -340,13 +362,174 @@ class vm_translator:
 
             self.write_asm('@R13')
             self.write_asm('M=M-1')
-            self.write_asm(f'@LOOP_{self.id_count}')
+            self.write_asm(f'@LOOP_{self.clean_file_name}.{self.id_count}')
             self.write_asm('0;JMP')
             
-            self.write_asm(f'(END_LOOP_{self.id_count})')
+            self.write_asm(f'(END_LOOP_{self.clean_file_name}.{self.id_count})')
 
         if command == 'call':
-            pass
+            function_name = parts[1]
+            n_args = parts[2]
+
+            self.write_asm(f'@return_address_{self.id_count}')
+            self.write_asm('D=A')
+            self.write_asm('@SP')
+            self.write_asm('A=M')
+            self.write_asm('M=D')
+            self.write_asm('@SP')
+            self.write_asm('M=M+1')
+
+            self.write_asm('@LCL')
+            self.write_asm('D=M')
+            self.write_asm('@SP')
+            self.write_asm('A=M')
+            self.write_asm('M=D')
+            self.write_asm('@SP')
+            self.write_asm('M=M+1')
+
+            self.write_asm('@ARG')
+            self.write_asm('D=M')
+            self.write_asm('@SP')
+            self.write_asm('A=M')
+            self.write_asm('M=D')
+            self.write_asm('@SP')
+            self.write_asm('M=M+1')
+
+            self.write_asm('@THIS')
+            self.write_asm('D=M')
+            self.write_asm('@SP')
+            self.write_asm('A=M')
+            self.write_asm('M=D')
+            self.write_asm('@SP')
+            self.write_asm('M=M+1')
+
+            self.write_asm('@THAT')
+            self.write_asm('D=M')
+            self.write_asm('@SP')
+            self.write_asm('A=M')
+            self.write_asm('M=D')
+            self.write_asm('@SP')
+            self.write_asm('M=M+1')
+
+            self.write_asm('@SP')
+            self.write_asm('D=M')
+
+            self.write_asm('@5')
+            self.write_asm('D=D-A')
+
+
+            self.write_asm(f'@{n_args}')
+            self.write_asm('D=D-A')
+
+            self.write_asm('@ARG')
+            self.write_asm('M=D')
+
+
+            self.write_asm("@SP")
+            self.write_asm("D=M")
+            self.write_asm("@LCL")
+            self.write_asm("M=D")
+
+
+            self.write_asm(f'@{function_name}')
+            self.write_asm('0;JMP')
+
+            self.write_asm(f'(return_address_{self.id_count})')
+        
+        if command == 'return':
+            # end frame
+            self.write_asm('@LCL')
+            self.write_asm('D=M')
+            self.write_asm('@R13')
+            self.write_asm('M=D')
+
+            # return address 
+            self.write_asm('@R13')
+            self.write_asm('D=M')
+            self.write_asm('@5')
+            self.write_asm('D=D-A')
+            self.write_asm('A=D')
+            self.write_asm('D=M')
+            self.write_asm('@R14')
+            self.write_asm('M=D')
+
+
+            # *ARG = pop()
+            self.write_asm('@SP')
+            self.write_asm('M=M-1')
+            self.write_asm('@SP')
+            self.write_asm('A=M')
+            self.write_asm('D=M')
+
+            self.write_asm('@ARG')
+            self.write_asm('A=M')
+            self.write_asm('M=D')
+
+            # SP = ARG + 1
+            self.write_asm('@ARG')
+            self.write_asm('D=M+1')
+            self.write_asm('@SP')
+            self.write_asm('M=D')
+
+
+            # THAT = *(endFrame - 1)
+            self.write_asm('@R13')
+            self.write_asm('D=M')
+            self.write_asm('@1')
+            self.write_asm('D=D-A')
+            self.write_asm('A=D')
+            self.write_asm('D=M')
+            self.write_asm('@THAT')
+            self.write_asm('M=D')
+
+
+            # THIS = *(endFrame - 2)
+            self.write_asm('@R13')
+            self.write_asm('D=M')
+            self.write_asm('@2')
+            self.write_asm('D=D-A')
+            self.write_asm('A=D')
+            self.write_asm('D=M')
+            self.write_asm('@THIS')
+            self.write_asm('M=D')
+
+
+            # ARG = *(endFrame - 3)
+            self.write_asm('@R13')
+            self.write_asm('D=M')
+            self.write_asm('@3')
+            self.write_asm('D=D-A')
+            self.write_asm('A=D')
+            self.write_asm('D=M')
+            self.write_asm('@ARG')
+            self.write_asm('M=D')
+
+
+            # LCL = *(endFrame - 4)
+            self.write_asm('@R13')
+            self.write_asm('D=M')
+            self.write_asm('@4')
+            self.write_asm('D=D-A')
+            self.write_asm('A=D')
+            self.write_asm('D=M')
+            self.write_asm('@LCL')
+            self.write_asm('M=D')
+
+
+            # goto retAddress
+            self.write_asm('@R14')
+            self.write_asm('A=M')
+            self.write_asm('0;JMP')
+
+            # self.current_function = ''
+
+
+
+
+
+
+
+
 
 
 
