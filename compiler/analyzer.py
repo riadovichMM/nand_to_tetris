@@ -39,16 +39,13 @@ class analyzer:
             self.compile_subroutine_dec()
             current_token = self.tokens[self.index]
 
-
-
         self.level-=1
         self.write_xml('</class>')
-        print(self.xml)
+
 
     def compile_class_var_dec(self):
         self.write_xml('<classVarDec>')
         self.level+=1
-
         self.process('keyword') # static | field
 
         # type
@@ -80,7 +77,6 @@ class analyzer:
     def compile_subroutine_dec(self):
         self.write_xml('<subroutineDec>')
         self.level+=1
-
         self.process('keyword') # constructor | function | method
 
         current_token = self.tokens[self.index]
@@ -94,10 +90,11 @@ class analyzer:
         self.process('symbol', '(')
         self.compile_parameter_list()
         self.process('symbol', ')')
+
         self.compile_subroutine_body()
 
         self.level-=1
-        self.write_xml('<subroutineDec>')
+        self.write_xml('</subroutineDec>')
 
     def compile_parameter_list(self):
         self.write_xml('<parameterList>')
@@ -126,6 +123,7 @@ class analyzer:
 
         self.process('symbol', '{')
 
+
         self.compile_var_dec()
         self.compile_statements()
 
@@ -137,17 +135,24 @@ class analyzer:
         self.write_xml('<varDec>')
         self.level+=1
 
-        self.process('keyword', 'var')
-        self.type()
-        self.process('identifier')
-
+        # тут ошибка
         current_token = self.tokens[self.index]
-        while current_token[1] == ',':
-            self.process('symbol', ',')
+
+        while current_token[1] == 'var':
+            self.process('keyword', 'var')
+
+            self.type()
             self.process('identifier')
+
+            current_token = self.tokens[self.index]
+            while current_token[1] == ',':
+                self.process('symbol', ',')
+                self.process('identifier')
+                current_token = self.tokens[self.index]
+
+            self.process('symbol', ';')
             current_token = self.tokens[self.index]
 
-        self.process('symbol', ';')
 
         self.level-=1
         self.write_xml('</varDec>')
@@ -155,10 +160,10 @@ class analyzer:
     def compile_statements(self):
         self.write_xml('<statements>')
         self.level+=1
-
         current_token = self.tokens[self.index]
         flag = True
         while flag:
+
             if current_token[1] == 'let':
                 self.compile_let_statement()
             if current_token[1] == 'if':
@@ -184,6 +189,7 @@ class analyzer:
         self.process('identifier')
 
         current_token = self.tokens[self.index]
+
         if current_token[1] == '[':
             self.process('symbol', '[')
             self.compile_expression()
@@ -244,6 +250,7 @@ class analyzer:
 
         self.process('keyword', 'do')
         self.compile_subroutine_call()
+
         self.process('symbol', ';')
 
 
@@ -252,7 +259,7 @@ class analyzer:
 
 
     def compile_return_statement(self):
-        self.write_xml('<doStatement>')
+        self.write_xml('<returnStatement>')
         self.level+=1
 
         self.process('keyword', 'return')
@@ -262,18 +269,24 @@ class analyzer:
         self.process('symbol', ';')
 
         self.level-=1
-        self.write_xml('</doStatement>')
+        self.write_xml('</returnStatement>')
 
 
     def compile_expression(self):
         self.write_xml('<expression>')
         self.level+=1
 
+        # тут может быть ошибка
         self.compile_term()
         current_token = self.tokens[self.index]
         while current_token[1] in ['+', '-', '*', '/', '&', '|', '<', '>', '=']:
+            print('current_token',current_token)
             self.compile_op()
             self.compile_term()
+            current_token = self.tokens[self.index]
+        print('test')
+        current_token = self.tokens[self.index]
+
 
         self.level-=1
         self.write_xml('</expression>')
@@ -282,17 +295,103 @@ class analyzer:
         self.write_xml('<term>')
         self.level+=1
 
+        current_token = self.tokens[self.index]
+        if current_token[0] == 'integerConstant':
+            self.process('integerConstant')
+
+        elif current_token[0] == 'stringConstant':
+            self.process('stringConstant')
+
+        elif current_token[0] == 'keyword' and current_token[1] in ['true', 'false', 'null', 'this']:
+            self.process('keyword')
+
+        elif current_token[1] == '(':
+            self.process('symbol', '(')
+            self.compile_expression()
+            self.process('symbol', ')')
+
+        elif current_token[1] in ['-', '~']:
+            self.process('symbol')
+            self.compile_term()
+
+
+        elif current_token[0] == 'identifier':
+            next_token = self.tokens[self.index + 1]
+
+            if next_token[1] == '[':
+                self.process('identifier')
+                self.process('symbol', '[')
+                self.compile_expression()
+                self.process('symbol', ']')
+
+            elif next_token[1] == '(':
+                self.compile_subroutine_call()
+
+            elif next_token[1] == '.':
+                self.compile_subroutine_call()
+
+            else:
+                self.process('identifier')
+
 
         self.level-=1
         self.write_xml('</term>')
         
         pass
 
-    def compile_op(self):
-        self.write_xml('<op>')
+    def compile_subroutine_call(self):
+        next_token = self.tokens[self.index+1]
+        if next_token[1] == '(':
+            self.process('identifier')
+            self.process('symbol', '(')
+            self.compile_expression_list()
+            self.process('symbol', ')')
+
+        elif next_token[1] == '.':
+            self.process('identifier')
+            self.process('symbol', '.')
+            self.process('identifier')
+            self.process('symbol', '(')
+            self.compile_expression_list()
+            self.process('symbol', ')')
+
+
+    def compile_expression_list(self):
+        self.write_xml('<expressionList>')
         self.level+=1
 
-        self.process('symbol')
+
+        current_token = self.tokens[self.index]
+
+        if current_token[1] != ')':
+
+            self.compile_expression()
+            print('list')
+            current_token = self.tokens[self.index]
+
+            while current_token[1] == ',':
+                self.process('symbol', ';')
+                self.compile_expression()
+                current_token = self.tokens[self.index]
+
 
         self.level-=1
-        self.write_xml('</op>')
+        self.write_xml('</expressionList>')
+
+
+
+
+    def compile_op(self):
+        current_token = self.tokens[self.index]
+        if current_token[0] == 'symbol' and current_token[1] in ['+', '-', '*', '/', '&', '|', '<', '>', '=']:
+            self.process('symbol')
+        else:
+            raise ValueError('Op token Error')
+
+
+
+    def generate_xml(self, file):
+        output_filename = file.split('.')[0] + 'F.xml'
+        f = open('./output/' + output_filename, 'w+')
+        f.write(self.xml)
+        f.close()
