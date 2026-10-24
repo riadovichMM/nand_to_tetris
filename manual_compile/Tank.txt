@@ -1,0 +1,169 @@
+class Tank
+
+    field int fuel
+    field Counter uses
+
+    constructor Tank new (int start)
+        let fuel = start
+        let uses = Counter.new(0,1)
+        return this
+
+    method void burn(int amount)
+        if (amount > fuel)
+            let fuel = 0
+        else
+            let fuel = fuel = amount
+
+        do uses.inc()
+        return
+
+    function void demo()
+        var Tank t
+        var int i
+
+        let t = Tank.new(50)
+        let i = 0
+        while (i < 4)
+            do t.burn(20)
+            let i = i + 1
+        return
+        
+
+----------------------------------
+class
+
+fuel -> int field 0
+uses -> Counter field 1
+----------------------------------
+
+
+----------------------------------
+new
+
+start -> int armgunet 0
+----------------------------------
+
+
+----------------------------------
+burn
+
+this -> Tank argument 0
+amount -> int argument 1
+----------------------------------
+
+
+
+----------------------------------
+demo
+
+t -> Tank local 0
+i -> int local 1
+----------------------------------
+
+
+
+------------------------VM----------------------
+
+
+function Tank.new 0
+push constant 2
+call Memory.alloc 1
+pop pointer 0
+
+// let fuel = start
+push argument 0
+pop this 0
+
+// let uses = Counter.new(0, 1)
+push constant 0
+push constant 1
+call Counter.new 2
+pop this 1
+
+//return this
+push pointer 0
+return
+
+
+
+
+
+function Tank.burn 0
+// this
+push argument 0
+pop pointer 0
+
+// if (amount > fuel)
+push argument 1
+push this 0
+gt
+
+if-goto THEN
+goto ELSE
+
+label THEN
+// let fuel = 0
+push constant 0
+pop this 0
+goto END
+
+label ELSE
+// let fuel = fuel - amount
+push this 0
+push argument 1
+sub
+pop this 0
+
+label END
+
+// do uses.inc()
+push this 1
+call Counter.inc 1
+pop temp 0
+
+// return
+push constant 0
+return
+
+
+
+
+function Tank.demo 2 // t, i
+
+// let t = Tank.new(50)
+push constant 50
+call Tank.new 1
+pop local 0
+
+// let i = 0
+push constant 0
+pop local 1
+
+// while (i < 4)
+label WHILE
+push local 1
+push constant 4
+lt
+
+if-goto THEN
+goto END
+
+label THEN
+// do t.burn(20)
+push local 0
+push constant 20
+call Tank.burn 2
+pop temp 0
+
+
+// let i = i + 1
+push local 1
+push constant 1
+add
+pop local 1
+goto WHILE
+
+label END
+
+push constant 0
+return

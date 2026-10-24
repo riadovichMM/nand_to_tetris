@@ -1,0 +1,133 @@
+class Stack
+
+    field Array data
+    field int top, size
+
+
+    constructor Stack new (int n)
+        let size = n
+        let data = Array.new(n)
+        let top = 0
+        return this
+
+    method void put(int x)
+        if (top < size)
+            let data[top] = x
+            let top = top + 1
+        return
+
+    method int sum() {
+        var int i, s
+        let i = 0
+        let s = 0
+        while (i < top)
+            let s = s + data[i]
+            let i = i + 1
+        return s
+    }
+
+    function void demo()
+        var Stack st
+
+        let st = Stack.new(5)
+        do st.put(7)
+        do st.put(3)
+        do Output.printInt(st.sum())
+        return
+
+
+
+
+-----------------------------------------
+class
+
+data -> Array field 0
+top -> int field 1
+size -> int field 2
+-----------------------------------------
+
+
+
+
+
+
+-----------------------------------------
+new
+
+n -> int argument 0
+-----------------------------------------
+
+
+
+
+-----------------------------------------
+put
+
+this -> Stack argument 0
+x -> int argument 1
+-----------------------------------------
+
+
+-----------------------------------------
+sum
+this -> Stack argument 0
+i -> int local 0
+s -> int local 1
+-----------------------------------------
+
+
+-----------------------------------------
+st -> Stack local 0
+-----------------------------------------
+
+
+
+
+----------------------------VM-------------------------
+
+function Stack.new 0
+push constant 3
+call Memory.alloc 1
+pop pointer 0
+
+//let size = n
+push argument 0
+pop this 2
+
+// let data = Array.new(n)
+push argument 0
+call Array.new 1
+pop this 0
+
+// let top = 0
+push constant 0
+pop this 1
+
+push pointer 0 // this
+return
+
+
+
+
+function Stack.put 0
+push argument 0
+pop pointer 0
+
+push this 1
+push this 2
+lt
+
+if-goto THEN
+goto ELSE
+
+label THEN
+// let data[top] = x;
+push this 0
+push this 1
+add
+goto END
+
+
+label ELSE
+
+lablel END

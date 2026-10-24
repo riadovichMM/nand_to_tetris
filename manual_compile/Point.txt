@@ -1,0 +1,78 @@
+class Point
+
+    field int x y
+    static int count
+
+    contructor Point new (int ax, int ay)
+        let x = ax
+        let y = ay
+        let count = count + 1
+        returh this
+
+
+    method int sumXY()
+        var int s
+        let s = x + y
+        return s
+
+    function int getCount()
+        return count
+
+
+----------------------------------------------------
+class
+
+x -> int field 0
+y -> int field 1
+count -> int static 0
+-------------------------------------------
+new 
+
+ax -> int arg 0
+ay -> int arg 1
+
+-----------------------------------------
+sumXY
+
+this -> Point argument 0
+s -> int local 0
+
+----------------------------------------------
+
+
+function Point.new 0
+push constant 2
+call Memory.alloc 1
+pop pointer 0
+
+push argument 0
+pop this 0
+
+push argument 1
+pop this 1
+
+push static 0
+push constant 1
+add
+pop static 0
+
+push pointer 0
+return this
+
+
+function Point.sumXY 1
+push argument 0
+pop pointer 0
+
+push this 0
+push this 1
+add
+pop local 0
+
+push local 0
+return
+
+
+function Point.getCount 0
+push static 0
+return

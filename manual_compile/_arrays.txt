@@ -1,0 +1,26 @@
+
+
+
+
+// x = a[i]
+push local 0 // a = 100
+push local 2 // i = 2
+add
+pop pointer 1
+push that 0
+
+
+------------------------
+
+
+// let a[i] = 7
+
+push local 0
+push local 2
+add
+push constant 7
+pop temp 0
+pop pointer 1
+push temp 0
+pop that 0
+

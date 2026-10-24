@@ -1,0 +1,170 @@
+class Wallet
+
+    field int balance
+    field Counter ops
+
+
+    counstructor Wallet new(int start)
+        let balance = start
+        let ops = Counter.new(0, 1)
+        return this
+
+
+    method boolean withdraw(int amount)
+        if (amount > balance)
+            return false
+        let balance = balance - amount
+        do ops.inc()
+        return true
+
+    function void demo()
+        var Wallet w
+        var int i
+        let w = Wallet.new(100)
+        let i = 0
+        while (i < 3)
+            do w.withdraw(10)
+            let i = i + 1
+        return 
+
+
+
+--------------------------------------------------------
+class level
+balance -> int field 0
+ops -> Counter field 1
+--------------------------------------------------------
+
+
+--------------------------------------------------------
+new 
+start -> int argument 0
+--------------------------------------------------------
+
+
+
+--------------------------------------------------------
+withdraw
+this -> Wallet argument 0
+amount -> int argument 1
+--------------------------------------------------------
+
+
+
+--------------------------------------------------------
+demo
+w -> Wallet local 0
+i -> int local 1
+--------------------------------------------------------
+
+
+
+
+
+----------------------------VM CODE----------------------
+
+
+
+
+function Wallet.new 0
+push constant 2
+call Memory.alloc 1
+pop pointer 0
+
+push argument 0
+pop this 0
+
+push constant 0
+push constant 1
+call Counter.new 2
+pop this 1
+
+push pointer 0
+return
+
+
+
+
+
+function Wallet.withdraw 0
+push argument 0
+pop pointer 0
+
+
+// if (amount > balance) { return false; }
+push argument 1
+push this 0
+gt
+if-goto THEN
+goto ELSE
+
+label THEN
+push constant 0
+return
+goto END
+
+label ELSE
+label END
+
+// let balance = balance - amount
+push this 0
+push argument 1
+sub
+pop this 0
+
+
+// do ops.inc()
+push this 1
+call Counter.inc 1
+pop temp 0
+
+
+// return true
+push constant 0
+not
+return
+
+
+
+
+
+
+function Wallet.demo 2 // w i local vars
+
+// let w = Wallet.new(100)
+push constant 100
+call Wallet.new(1)
+pop local 0
+
+
+// let i = 0
+push constant 0 
+pop local 1
+
+
+// while (i < 3)
+label WHILE_EXP
+push local 1
+push constant 3
+lt
+if-goto WHILE_TRUE
+
+goto WHILE_END0
+
+label WHILE_TRUE
+push local 0
+push constant 10
+call Wallet.withdraw 2
+pop temp 0
+
+// let i = i + 1
+push local 1
+push constant 1
+add
+pop local 1
+
+goto WHILE_EXP
+label WHILE_END
+
+push constant 0
+return

@@ -1,0 +1,12 @@
+
+push constant 1
+if-goto THEN
+goto ELSE
+
+label THEN
+// do some in then
+goto END
+
+label ELSE
+// do some in else
+label END

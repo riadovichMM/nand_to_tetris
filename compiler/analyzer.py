@@ -123,8 +123,12 @@ class analyzer:
 
         self.process('symbol', '{')
 
+        current_token = self.tokens[self.index]
+        while current_token[1] == 'var':
+            self.compile_var_dec()
+            current_token = self.tokens[self.index]
 
-        self.compile_var_dec()
+
         self.compile_statements()
 
         self.level-=1
@@ -135,23 +139,21 @@ class analyzer:
         self.write_xml('<varDec>')
         self.level+=1
 
-        # тут ошибка
         current_token = self.tokens[self.index]
 
-        while current_token[1] == 'var':
-            self.process('keyword', 'var')
+        self.process('keyword', 'var')
 
-            self.type()
+        self.type()
+        self.process('identifier')
+
+        current_token = self.tokens[self.index]
+        while current_token[1] == ',':
+            self.process('symbol', ',')
             self.process('identifier')
-
             current_token = self.tokens[self.index]
-            while current_token[1] == ',':
-                self.process('symbol', ',')
-                self.process('identifier')
-                current_token = self.tokens[self.index]
 
-            self.process('symbol', ';')
-            current_token = self.tokens[self.index]
+        self.process('symbol', ';')
+        current_token = self.tokens[self.index]
 
 
         self.level-=1
@@ -163,7 +165,6 @@ class analyzer:
         current_token = self.tokens[self.index]
         flag = True
         while flag:
-
             if current_token[1] == 'let':
                 self.compile_let_statement()
             if current_token[1] == 'if':
@@ -175,6 +176,9 @@ class analyzer:
             if current_token[1] == 'return':
                 self.compile_return_statement()
                 flag = False
+            if current_token[1] == '}':
+                flag = False
+        
             current_token = self.tokens[self.index]
 
         self.level-=1
@@ -280,11 +284,9 @@ class analyzer:
         self.compile_term()
         current_token = self.tokens[self.index]
         while current_token[1] in ['+', '-', '*', '/', '&', '|', '<', '>', '=']:
-            print('current_token',current_token)
             self.compile_op()
             self.compile_term()
             current_token = self.tokens[self.index]
-        print('test')
         current_token = self.tokens[self.index]
 
 
@@ -366,7 +368,6 @@ class analyzer:
         if current_token[1] != ')':
 
             self.compile_expression()
-            print('list')
             current_token = self.tokens[self.index]
 
             while current_token[1] == ',':
