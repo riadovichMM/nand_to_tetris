@@ -3,16 +3,12 @@ import re
 
 JACK_CODE = """
 class Simple {
-    function int calculate() {
-        var int x, y;
+    function int calculate(int a, int b) {
+        var int x;
 
-        let x = 2 + 3;
+        let x = a + b;
 
-        if (1) {
-            let y = 10;
-        } else {
-            let y = 0
-        }
+        let b = 1;
 
         return x;
     }
@@ -24,14 +20,18 @@ class SimpleCompiler:
     def __init__(self, source):
         # Разбиваем исходный код на токены.
         self.tokens = re.findall(
-            r"[A-Za-z_]\w*|[0-9]+|[{}()\[\].,;+\-=]",
+            r"[A-Za-z_]\w*|[0-9]+|[{}()\[\].,;+\-<>=]",
             source
         )
         self.pos = 0
         self.vm = []
         self.class_name = ''
-        self.symbol_table = {}
+
+        self.local_table = {}
         self.local_index = 0
+
+        self.arg_table = {}
+        self.arg_index = 0
 
 
     def current(self):
@@ -79,11 +79,16 @@ class SimpleCompiler:
         return_type = self.consume() #type
         function_name = self.consume()
 
+        self.arg_table = {}
+        self.arg_index = 0
+
         self.consume('(')
+        self.compile_arguments()
+        print(self.arg_table)
         self.consume(')')
         self.consume('{')
 
-        self.symbol_table = {}
+        self.local_table = {}
         self.local_index = 0
 
         # var declaration
@@ -99,6 +104,16 @@ class SimpleCompiler:
         self.consume('}')
     #--------------------------------------------------------------
 
+    def compile_arguments(self):
+        while self.current() != ')':
+            arg_type = self.consume() # type
+            name = self.consume()
+
+            self.arg_table[name] = self.arg_index
+            self.arg_index += 1
+
+            if self.current() == ',':
+                self.consume(',')
 
 
 
@@ -108,7 +123,7 @@ class SimpleCompiler:
 
         while True:
             name = self.consume()
-            self.symbol_table[name] = self.local_index
+            self.local_table[name] = self.local_index
             self.local_index += 1
 
             if self.current() != ',':
@@ -127,7 +142,10 @@ class SimpleCompiler:
                 self.compile_return()
             elif self.current() == 'if':
                 self.compile_if()
-            print(self.current())
+            elif self.current() == 'while':
+                self.compile_while()
+
+
 
 
     # statements
@@ -139,8 +157,12 @@ class SimpleCompiler:
         self.compile_expression()
         self.consume(';')
 
-        index = self.symbol_table[name]
-        self.emit(f'pop local {index}')
+        if name in self.local_table:
+            index = self.local_table[name]
+            self.emit(f'pop local {index}')
+        elif name in self.arg_table:
+            index = self.arg_table[name]
+            self.emit(f'pop argument {index}')
 
 
 
@@ -181,18 +203,37 @@ class SimpleCompiler:
         else:
             self.emit('label ELSE')
 
+    def compile_while(self):
+        self.emit('label WHILE_START')
+        self.consume('while')
+        self.consume('(')
+        self.compile_expression()
+
+        self.consume(')')
+
+        self.emit('if-goto WHILE_BODY')
+        self.emit('goto WHILE_END')
+
+        self.emit('label WHILE_BODY')
+        self.consume('{')
+        self.compile_statements()
+        self.consume('}')
+        self.emit('goto WHILE_START')
+
+        self.emit('label WHILE_END')
 
 
     # service functions
     def compile_expression(self):
         self.compile_term()
-
-        while self.current() in ['+']:
+        while self.current() in ['+', '<']:
             operation = self.consume()
             self.compile_term()
 
             if operation == '+':
                 self.emit('add')
+            if operation == '<':
+                self.emit('lt')
 
 
     def compile_term(self):
@@ -201,10 +242,14 @@ class SimpleCompiler:
         if token.isdigit():
             self.consume()
             self.emit(f'push constant {token}')
-        if token in self.symbol_table:
+        if token in self.local_table:
             self.consume()
-            index = self.symbol_table[token]
+            index = self.local_table[token]
             self.emit(f'push local {index}')
+        elif token in self.arg_table:
+            self.consume()
+            index = self.arg_table[token]
+            self.emit(f'push argument {index}')
 
 
 
@@ -213,8 +258,8 @@ class SimpleCompiler:
 
 def main():
     compiler = SimpleCompiler(JACK_CODE)
-    compiler.compile()
     print(compiler.tokens)
+    compiler.compile()
 
     print('-----------------------')
     for line in compiler.vm:
