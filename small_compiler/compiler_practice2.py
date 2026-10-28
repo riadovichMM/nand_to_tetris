@@ -3,20 +3,15 @@ import re
 
 JACK_CODE = """
 class Simple {
+    field int x, y;
     function int calculate(int a, int b) {
-        var int x;
-
-        let x = a + b;
-
-        let b = 1;
-
-        return x;
     }
 }
 """
 
 
 class SimpleCompiler:
+
     def __init__(self, source):
         # Разбиваем исходный код на токены.
         self.tokens = re.findall(
