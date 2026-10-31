@@ -3,9 +3,13 @@ import re
 
 JACK_CODE = """
 class Simple {
-    field int x, y;
-    function int calculate(int a, int b) {
+    field int x;
+
+    method int calculate(int a, int b) {
+        let x = a + b;
+        return x;
     }
+
 }
 """
 
@@ -27,6 +31,9 @@ class SimpleCompiler:
 
         self.arg_table = {}
         self.arg_index = 0
+
+        self.field_table = {}
+        self.field_index = 0
 
 
     def current(self):
@@ -57,29 +64,54 @@ class SimpleCompiler:
 
 
 
-
     # main functions
     def compile(self):
         self.consume('class')
         self.class_name = self.consume()
         self.consume('{')
 
-        while self.current() != '}':
+        while self.current() == 'field':
+            self.compile_fields()
+
+        while self.current() in ['function', 'method']:
             self.compile_function()
 
         self.consume('}')
 
+
+
+
+    def compile_fields(self):
+        self.consume('field')
+        field_type = self.consume()
+
+        while True:
+            field_name = self.consume()
+            self.field_table[field_name] = self.field_index
+            self.field_index += 1
+
+            if self.current() == ';':
+                break
+
+            self.consume(',')
+        self.consume(';')
+
+
+
     def compile_function(self):
-        self.consume('function')
-        return_type = self.consume() #type
+        kind_of_func = self.consume() # method or function
+
+        return_type = self.consume() # type
         function_name = self.consume()
 
         self.arg_table = {}
-        self.arg_index = 0
+        if kind_of_func == 'method':
+            self.arg_index = 1
+        else:
+            self.arg_index = 0
 
         self.consume('(')
         self.compile_arguments()
-        print(self.arg_table)
         self.consume(')')
         self.consume('{')
 
@@ -93,11 +125,19 @@ class SimpleCompiler:
 
         self.emit(f'function {self.class_name}.{function_name} {self.local_index}')
 
+        if kind_of_func == 'method':
+            self.emit('push argument 0')
+            self.emit('pop pointer 0')
+
         # main statements/code of functions
         self.compile_statements()
         
         self.consume('}')
     #--------------------------------------------------------------
+
+
+
+
 
     def compile_arguments(self):
         while self.current() != ')':
@@ -131,6 +171,7 @@ class SimpleCompiler:
 
     def compile_statements(self):
         while self.current() != '}':
+            print(self.current())
             if self.current() == 'let':
                 self.compile_let()
             elif self.current() == 'return':
@@ -139,6 +180,8 @@ class SimpleCompiler:
                 self.compile_if()
             elif self.current() == 'while':
                 self.compile_while()
+            # elif self.current() == 'do':
+            #     self.compile_do()
 
 
 
@@ -158,7 +201,9 @@ class SimpleCompiler:
         elif name in self.arg_table:
             index = self.arg_table[name]
             self.emit(f'pop argument {index}')
-
+        elif name in self.field_table:
+            index = self.field_table[name]
+            self.emit(f'pop this {index}')
 
 
     def compile_return(self):
@@ -197,6 +242,8 @@ class SimpleCompiler:
             self.emit('label END')
         else:
             self.emit('label ELSE')
+
+
 
     def compile_while(self):
         self.emit('label WHILE_START')
@@ -245,6 +292,10 @@ class SimpleCompiler:
             self.consume()
             index = self.arg_table[token]
             self.emit(f'push argument {index}')
+        elif token in self.field_table:
+            self.consume()
+            index = self.field_table[token]
+            self.emit(f'push this {index}')
 
 
 
