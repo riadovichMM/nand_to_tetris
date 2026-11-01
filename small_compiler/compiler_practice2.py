@@ -5,11 +5,17 @@ JACK_CODE = """
 class Simple {
     field int x;
 
+
+    method void demo() {
+        do calculate(2, 2);
+        return;
+    }
+
+
     method int calculate(int a, int b) {
         let x = a + b;
         return x;
     }
-
 }
 """
 
@@ -171,7 +177,6 @@ class SimpleCompiler:
 
     def compile_statements(self):
         while self.current() != '}':
-            print(self.current())
             if self.current() == 'let':
                 self.compile_let()
             elif self.current() == 'return':
@@ -180,8 +185,8 @@ class SimpleCompiler:
                 self.compile_if()
             elif self.current() == 'while':
                 self.compile_while()
-            # elif self.current() == 'do':
-            #     self.compile_do()
+            elif self.current() == 'do':
+                self.compile_do()
 
 
 
@@ -208,11 +213,15 @@ class SimpleCompiler:
 
     def compile_return(self):
         self.consume('return')
+        if self.current() == ';':
+            self.emit('push constant 0')
+            self.emit('return')
+            self.consume(';')
+        else:
+            self.compile_expression()
 
-        self.compile_expression()
-
-        self.consume(';')
-        self.emit('return')
+            self.consume(';')
+            self.emit('return')
 
 
 
@@ -263,6 +272,39 @@ class SimpleCompiler:
         self.emit('goto WHILE_START')
 
         self.emit('label WHILE_END')
+
+
+    def compile_do(self):
+        self.consume('do')
+        self.compile_call()
+        self.consume(';')
+
+
+        self.emit('pop temp 0')
+
+    def compile_call(self):
+        func_name = self.consume()
+
+        self.emit('push pointer 0')
+
+        self.consume('(')
+        count = self.compile_expression_list()
+        self.consume(')')
+
+        self.emit(f'call {self.class_name}.{func_name} {count + 1}')
+
+    def compile_expression_list(self):
+        count = 0
+        
+        if self.current() != ')':
+            self.compile_expression()
+            count += 1
+
+            while self.current() == ',':
+                self.consume(',')
+                self.compile_expression()
+                count+= 1
+        return count
 
 
     # service functions
