@@ -7,6 +7,8 @@ class virtual_machine:
 
         self.dir_or_file = dir_or_file
         self.files = {}
+        self.asm_code = []
+
 
         if '.vm' in dir_or_file:
             self.read_file()
@@ -33,18 +35,35 @@ class virtual_machine:
 
     def get_clean_code(self, code):
         clean_code = []
-        print('code', code)
         for line in code:
-            if line.startwith('//'):
+            if line.startswith('//') or line == '\n':
                 continue
 
             if '//' in line:
-                pass
-            print(line)
+                line = line.split('//')[0]
+
+            clean_code.append(line.strip())
+        return clean_code
 
     def translate(self):
         for file in self.files:
             code = self.get_clean_code(self.files[file])
 
+            print('---'*30)
+            print(file)
+            for line in code:
+                print(line)
 
-    
+                parts = line.split()
+                print(parts)
+
+                if parts[0] in ['push', 'pop']:
+                    self.push_pop_command(parts)
+
+
+    def push_pop_command(self, parts):
+        if parts[0] == 'push':
+            if parts[1] == 'constant':
+                pass
+            pass
+        pass
