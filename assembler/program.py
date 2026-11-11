@@ -60,12 +60,81 @@ class assambler_translator:
             'JMP': '111',
         }
 
+        self.reserved_labels = {
+            'SP':     0,
+            'LCL':    1,
+            'ARG':    2,
+            'THIS':   3,
+            'THAT':   4,
+            'R0':     0,
+            'R1':     1,
+            'R2':     2,
+            'R3':     3,
+            'R4':     4,
+            'R5':     5,
+            'R6':     6,
+            'R7':     7,
+            'R8':     8,
+            'R9':     9,
+            'R10':    10,
+            'R11':    11,
+            'R12':    12,
+            'R13':    13,
+            'R14':    14,
+            'R15':    15,
+            'SCREEN': 16384,
+            'KBD':    24576,
+        }
+        self.next_var = 16
+        self.vars = {}
+
+
     def translate(self):
         # запоминанеие меток
+        i = 0
+        labels = {}
         for line in self.asm_code:
-            print(line)
+            if line.startswith('('):
+                labels[line.replace('(', '').replace(')', '')] = i
+            else:
+                i = i + 1
+            pass
 
+        print(labels)
+
+        handled_asm_code = []
+        # заменяем метки 
         for line in self.asm_code:
+            if line.startswith('('):
+                continue
+    
+            if line.startswith('@'):
+                a_instr = line.replace('@', '')
+
+                if a_instr.isdigit():
+                    handled_asm_code.append('@' + str(a_instr))
+                    continue
+
+                if a_instr in labels:
+                    value = labels[a_instr]
+                    handled_asm_code.append('@' + str(value))
+                elif a_instr in self.reserved_labels:
+                    value = self.reserved_labels[a_instr]
+                    handled_asm_code.append('@' + str(value))
+                else:
+                    if a_instr in self.vars:
+                        var_num = self.vars[a_instr]
+                        handled_asm_code.append('@' + str(var_num))
+                    else:
+                        self.vars[a_instr] = self.next_var
+                        handled_asm_code.append('@' + str(self.next_var))
+                        self.next_var += 1
+            else:
+                handled_asm_code.append(line)
+
+        self.handled_asm_code = handled_asm_code
+
+        for line in handled_asm_code:
             if line.startswith('@'):
                 # A instruction
                 value = line.split('@')[1]
@@ -76,10 +145,33 @@ class assambler_translator:
                 dest = ''
                 comp = ''
                 jump = ''
-                # dest=comp;jump
-                if '=' in line:
-                    pass
 
+                if ('=' in line) and (';' not in line):
+                    # dest=comp
+                    c_instr_parts = line.split('=')
+                    dest = c_instr_parts[0]
+                    comp = c_instr_parts[1]
+                elif (';' in line) and ('=' not in line):
+                    # comp;jump
+                    c_instr_parts = line.split(';')
+                    comp = c_instr_parts[0]
+                    jump = c_instr_parts[1]
+                elif ('=' in line) and (';' in line):
+                    # dest=comp;jump
+                    c_instr_parts = line.split('=')
+                    dest = c_instr_parts[0]
+                    other_part = c_instr_parts[1].split(';')
+                    comp = other_part[0]
+                    jump = other_part[1]
+
+                
+                if comp == '':
+                    print('comp=>', comp, line)
+
+
+                self.hack_binary_code.append('111' + self.table_comp[comp] + self.table_dest[dest] + self.table_jump[jump])
+
+        return self.hack_binary_code
 
 
 
@@ -87,8 +179,8 @@ class assambler_translator:
 
 def main():
     file_path = sys.argv[1]
-    print('file_path', file_path)
 
+    print(file_path)
 
     f = open(file_path, 'r')
     raw_asm_code = f.readlines()
@@ -113,7 +205,21 @@ def main():
 
         asm_code.append(line)
 
+    print(asm_code)
+
     at = assambler_translator(asm_code)
-    at.translate()
+    asm_code = at.translate()
+
+
+    new_file_name = file_path.replace('.asm', '.hack')
+    f = open(new_file_name, 'w+')
+    f.writelines(f"{line}\n" for line in asm_code)
+    f.close()
+
+
+    new_file_name = file_path.replace('.asm', '.txt')
+    f = open(new_file_name, 'w+')
+    f.writelines(f"{line}\n" for line in at.handled_asm_code)
+    f.close() 
 
 main()
