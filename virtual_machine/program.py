@@ -15,6 +15,6 @@ def main():
 
     vm = virtual_machine(dir_or_path)
     vm.translate()
-
+    vm.generate_asm_file()
 
 main()

@@ -32,6 +32,8 @@ class virtual_machine:
             self.files[file.name] = f.readlines()
             f.close()
 
+    def write_asm(self, code):
+        self.asm_code.append(code)
 
     def get_clean_code(self, code):
         clean_code = []
@@ -44,6 +46,15 @@ class virtual_machine:
 
             clean_code.append(line.strip())
         return clean_code
+
+    def generate_asm_file(self):
+        if '.vm' in self.dir_or_file:
+            new_path = self.dir_or_file.replace('.vm', '.asm')
+            f = open(new_path, 'w+')
+            for line in self.asm_code:
+                f.write(line + '\n')
+            f.close()
+        pass
 
     def translate(self):
         for file in self.files:
@@ -59,11 +70,43 @@ class virtual_machine:
 
                 if parts[0] in ['push', 'pop']:
                     self.push_pop_command(parts)
+                if parts[0] in ['eq', 'lt', 'gt', 'add', 'sub', 'and', 'or', 'not', 'neg']:
+                    self.logic_arithmetic(parts[0])
 
 
     def push_pop_command(self, parts):
         if parts[0] == 'push':
             if parts[1] == 'constant':
-                pass
-            pass
-        pass
+                self.write_asm(f'@{parts[2]}')
+                self.write_asm('D=A')
+                self.write_asm('@SP')
+                self.write_asm('A=M')
+                self.write_asm('M=D')
+                self.write_asm('@SP')
+                self.write_asm('M=M+1')
+
+
+    def logic_arithmetic(self, command):
+        if command == 'add':
+            self.write_asm('@SP')
+            self.write_asm('M=M-1')
+            self.write_asm('@SP')
+            self.write_asm('A=M')
+
+            self.write_asm('D=M')
+
+            self.write_asm('@SP')
+            self.write_asm('M=M-1')
+            self.write_asm('@SP')
+            self.write_asm('A=M')
+
+            self.write_asm('M=D+M')
+
+            self.write_asm('@SP')
+            self.write_asm('M=M+1')
+        
+
+
+
+
+
