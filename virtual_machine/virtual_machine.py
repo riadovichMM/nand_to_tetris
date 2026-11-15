@@ -8,6 +8,7 @@ class virtual_machine:
         self.dir_or_file = dir_or_file
         self.files = {}
         self.asm_code = []
+        self.global_uid = 0
 
 
         if '.vm' in dir_or_file:
@@ -72,22 +73,36 @@ class virtual_machine:
                     self.push_pop_command(parts)
                 if parts[0] in ['eq', 'lt', 'gt', 'add', 'sub', 'and', 'or', 'not', 'neg']:
                     self.logic_arithmetic(parts[0])
+                self.global_uid += 1
 
 
     def push_pop_command(self, parts):
         if parts[0] == 'push':
             if parts[1] == 'constant':
+                self.write_asm(f'// {parts[0]} {parts[1]} {parts[2]}')
                 self.write_asm(f'@{parts[2]}')
                 self.write_asm('D=A')
+
                 self.write_asm('@SP')
                 self.write_asm('A=M')
                 self.write_asm('M=D')
+
                 self.write_asm('@SP')
                 self.write_asm('M=M+1')
 
 
     def logic_arithmetic(self, command):
-        if command == 'add':
+
+        # оптимизированная версия
+        if command in ['sub', 'add', 'and', 'or']:
+            operations = {
+                'add': 'M=D+M',
+                'sub': 'M=M-D',
+                'and': 'M=D&M',
+                'or':  'M=D|M'
+            }
+            self.write_asm(f'// {command}')
+
             self.write_asm('@SP')
             self.write_asm('M=M-1')
             self.write_asm('@SP')
@@ -100,11 +115,66 @@ class virtual_machine:
             self.write_asm('@SP')
             self.write_asm('A=M')
 
-            self.write_asm('M=D+M')
+            self.write_asm(operations[command])
 
             self.write_asm('@SP')
             self.write_asm('M=M+1')
-        
+
+        if command in ['neg', 'not']:
+            operations = {
+                'neg': 'M=-M',
+                'not': 'M=!M',
+            }
+            self.write_asm(f'// {command}')
+
+            self.write_asm('@SP')
+            self.write_asm('M=M-1')
+            self.write_asm('A=M')
+
+            self.write_asm(operations[command])
+
+            self.write_asm('@SP')
+            self.write_asm('M=M+1')
+
+        if command in ['eq', 'gt', 'lt']:
+            operations = {
+                'eq': 'D;JEQ',
+                'gt': 'D;JGT',
+                'lt': 'D;JLT',
+            }
+            self.write_asm(f'// {command}')
+
+            self.write_asm('@SP')
+            self.write_asm('M=M-1')
+            self.write_asm('A=M')
+            self.write_asm('D=M')
+
+            self.write_asm('@SP')
+            self.write_asm('M=M-1')
+            self.write_asm('A=M')
+            self.write_asm('D=M-D')
+
+            self.write_asm(f'@TRUE_BLOCK_{self.global_uid}')
+            self.write_asm(operations[command]) # D;JEQ | eq
+
+            self.write_asm('@SP')
+            self.write_asm('A=M')
+            self.write_asm('M=0')
+            self.write_asm(f'@END_{self.global_uid}')
+            self.write_asm('0;JMP')
+
+
+            self.write_asm(f'(TRUE_BLOCK_{self.global_uid})')
+            self.write_asm('@SP')
+            self.write_asm('A=M')
+            self.write_asm('M=-1')
+            self.write_asm(f'@END_{self.global_uid}')
+            self.write_asm('0;JMP')
+
+
+            self.write_asm(f'(END_{self.global_uid})')
+            self.write_asm('@SP')
+            self.write_asm('M=M+1')
 
 
 
