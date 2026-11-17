@@ -1,4 +1,5 @@
 from pathlib import Path
+import ntpath
 
 
 class virtual_machine:
@@ -9,6 +10,7 @@ class virtual_machine:
         self.files = {}
         self.asm_code = []
         self.global_uid = 0
+        self.current_file_name = None
 
 
         if '.vm' in dir_or_file:
@@ -59,16 +61,16 @@ class virtual_machine:
 
     def translate(self):
         for file in self.files:
+            filename = ntpath.basename(file)
+            clean_filename = filename.split('.')[0]
+            self.current_file_name = clean_filename
+
             code = self.get_clean_code(self.files[file])
 
-            print('---'*30)
-            print(file)
             for line in code:
-                print(line)
 
                 parts = line.split()
-                print(parts)
-
+                self.write_asm(f'// {line}')
                 if parts[0] in ['push', 'pop']:
                     self.push_pop_command(parts)
                 if parts[0] in ['eq', 'lt', 'gt', 'add', 'sub', 'and', 'or', 'not', 'neg']:
@@ -79,7 +81,6 @@ class virtual_machine:
     def push_pop_command(self, parts):
         if parts[0] == 'push':
             if parts[1] == 'constant':
-                self.write_asm(f'// {parts[0]} {parts[1]} {parts[2]}')
                 self.write_asm(f'@{parts[2]}')
                 self.write_asm('D=A')
 
@@ -89,6 +90,87 @@ class virtual_machine:
 
                 self.write_asm('@SP')
                 self.write_asm('M=M+1')
+            if parts[1] in ['local', 'argument', 'this', 'that', 'temp', 'pointer']:
+                segments = {
+                    'local': '@LCL',
+                    'argument': '@ARG',
+                    'this': '@THIS',
+                    'that': '@THAT',
+
+                    'temp': '@5',
+                    'pointer': '@3'
+                }
+
+                self.write_asm(segments[parts[1]])   # @LCL
+                if parts[1] in ['pointer', 'temp']:
+                    self.write_asm('D=A')
+                else:
+                    self.write_asm('D=M')
+                self.write_asm(f'@{parts[2]}')
+                self.write_asm('D=D+A')
+                self.write_asm('A=D')
+                self.write_asm('D=M')
+
+                self.write_asm('@SP')
+                self.write_asm('A=M')
+                self.write_asm('M=D')
+
+                self.write_asm('@SP')
+                self.write_asm('M=M+1')
+            if parts[1] == 'static':
+                self.write_asm(f'@{self.current_file_name}.{parts[2]}')
+                self.write_asm('D=M')
+
+                self.write_asm('@SP')
+                self.write_asm('A=M')
+                self.write_asm('M=D')
+
+                self.write_asm('@SP')
+                self.write_asm('M=M+1')
+        else:
+            if parts[1] in ['local', 'argument', 'this', 'that', 'temp', 'pointer']:
+                segments = {
+                    'local': '@LCL',
+                    'argument': '@ARG',
+                    'this': '@THIS',
+                    'that': '@THAT',
+
+                    'temp': '@5',
+                    'pointer': '@3'
+                }
+
+                self.write_asm(segments[parts[1]])
+                if parts[1] in ['pointer', 'temp']:
+                    self.write_asm('D=A')
+                else:
+                    self.write_asm('D=M')
+                self.write_asm(f'@{parts[2]}')
+                self.write_asm('D=D+A')
+
+                self.write_asm('@R13')
+                self.write_asm('M=D')
+
+                self.write_asm('@SP')
+                self.write_asm('M=M-1')
+                self.write_asm('@SP')
+                self.write_asm('A=M')
+                self.write_asm('D=M')
+
+                self.write_asm('@R13')
+                self.write_asm('A=M')
+                self.write_asm('M=D')
+            if parts[1] == 'static':
+                self.write_asm('@SP')
+                self.write_asm('M=M-1')
+
+                self.write_asm('@SP')
+                self.write_asm('A=M')
+                self.write_asm('D=M')
+
+                self.write_asm(f'@{self.current_file_name}.{parts[2]}')
+                self.write_asm('M=D')
+
+
 
 
     def logic_arithmetic(self, command):
@@ -101,7 +183,6 @@ class virtual_machine:
                 'and': 'M=D&M',
                 'or':  'M=D|M'
             }
-            self.write_asm(f'// {command}')
 
             self.write_asm('@SP')
             self.write_asm('M=M-1')
@@ -125,7 +206,6 @@ class virtual_machine:
                 'neg': 'M=-M',
                 'not': 'M=!M',
             }
-            self.write_asm(f'// {command}')
 
             self.write_asm('@SP')
             self.write_asm('M=M-1')
@@ -142,7 +222,6 @@ class virtual_machine:
                 'gt': 'D;JGT',
                 'lt': 'D;JLT',
             }
-            self.write_asm(f'// {command}')
 
             self.write_asm('@SP')
             self.write_asm('M=M-1')
