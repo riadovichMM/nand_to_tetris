@@ -75,6 +75,9 @@ class virtual_machine:
                     self.push_pop_command(parts)
                 if parts[0] in ['eq', 'lt', 'gt', 'add', 'sub', 'and', 'or', 'not', 'neg']:
                     self.logic_arithmetic(parts[0])
+                if parts[0] in ['label', 'goto', 'if-goto']:
+                    self.branch_commands(parts)
+                    pass
                 self.global_uid += 1
 
 
@@ -254,6 +257,25 @@ class virtual_machine:
             self.write_asm(f'(END_{self.global_uid})')
             self.write_asm('@SP')
             self.write_asm('M=M+1')
+
+    def branch_commands(self, parts):
+        if parts[0] == 'label':
+            self.write_asm(f'({parts[1]})')
+
+        if parts[0] == 'goto':
+            self.write_asm(f'@{parts[1]}')
+            self.write_asm('0;JMP')
+
+        if parts[0] == 'if-goto':
+            self.write_asm('@SP')
+            self.write_asm('M=M-1')
+
+            self.write_asm('@SP')
+            self.write_asm('A=M')
+            self.write_asm('D=M')
+
+            self.write_asm(f'@{parts[1]}')
+            self.write_asm('D;JNE')
 
 
 
