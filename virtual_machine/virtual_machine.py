@@ -11,6 +11,7 @@ class virtual_machine:
         self.asm_code = []
         self.global_uid = 0
         self.current_file_name = None
+        self.current_function_name_for_prefix = ''
 
 
         if '.vm' in dir_or_file:
@@ -77,7 +78,8 @@ class virtual_machine:
                     self.logic_arithmetic(parts[0])
                 if parts[0] in ['label', 'goto', 'if-goto']:
                     self.branch_commands(parts)
-                    pass
+                if parts[0] in ['function', 'call', 'return']:
+                    self.function_commands(parts)
                 self.global_uid += 1
 
 
@@ -260,10 +262,18 @@ class virtual_machine:
 
     def branch_commands(self, parts):
         if parts[0] == 'label':
-            self.write_asm(f'({parts[1]})')
+            if self.current_function_name_for_prefix != '':
+                self.write_asm(f'({self.current_function_name_for_prefix}${parts[1]})')
+            else:
+                self.write_asm(f'({parts[1]})')
+
 
         if parts[0] == 'goto':
-            self.write_asm(f'@{parts[1]}')
+            if self.current_function_name_for_prefix != '':
+                self.write_asm(f'@{self.current_function_name_for_prefix}${parts[1]}')
+            else:
+                self.write_asm(f'@{parts[1]}')
+
             self.write_asm('0;JMP')
 
         if parts[0] == 'if-goto':
@@ -274,10 +284,41 @@ class virtual_machine:
             self.write_asm('A=M')
             self.write_asm('D=M')
 
-            self.write_asm(f'@{parts[1]}')
+            if self.current_function_name_for_prefix != '':
+                self.write_asm(f'@{self.current_function_name_for_prefix}${parts[1]}')
+            else:
+                self.write_asm(f'@{parts[1]}')
+
             self.write_asm('D;JNE')
 
 
+    def function_commands(self, parts):
+        if parts[0] == 'function':
+            self.current_function_name_for_prefix = parts[1]
+            self.write_asm(f'({parts[1]})')
+            self.write_asm(f'@{parts[2]}')
+            self.write_asm('D=A')
+            self.write_asm('@R13')
+            self.write_asm('M=D')
 
+            self.write_asm(f'(CONDITION_{self.global_uid})')
+            self.write_asm('@R13')
+            self.write_asm('D=M')
+            self.write_asm(f'@END_{self.global_uid}')
+            self.write_asm('D;JEQ')
+
+            self.write_asm('@SP')
+            self.write_asm('A=M')
+            self.write_asm('M=0')
+            self.write_asm('@SP')
+            self.write_asm('M=M+1')
+
+            self.write_asm('@R13')
+            self.write_asm('M=M-1')
+
+            self.write_asm(f'@CONDITION_{self.global_uid}')
+            self.write_asm('0;JMP')
+
+            self.write_asm(f'(END_{self.global_uid})')
 
 
