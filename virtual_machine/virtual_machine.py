@@ -1,6 +1,6 @@
 from pathlib import Path
 import ntpath
-
+import re
 
 class virtual_machine:
 
@@ -13,11 +13,12 @@ class virtual_machine:
         self.current_file_name = None
         self.current_function_name_for_prefix = ''
 
-
         if '.vm' in dir_or_file:
             self.read_file()
         else:
             self.open_directory_and_read_files()
+
+        self.bootstrap()
 
 
     def read_file(self):
@@ -28,7 +29,6 @@ class virtual_machine:
 
     def open_directory_and_read_files(self):
         dir_path = Path(self.dir_or_file)
-
         files = [f for f in dir_path.iterdir() if f.is_file()]
 
         for file in files:
@@ -58,7 +58,81 @@ class virtual_machine:
             for line in self.asm_code:
                 f.write(line + '\n')
             f.close()
-        pass
+        else:
+            parts = [p for p in re.split(r'[\\/]', self.dir_or_file) if p]
+            last_part = parts[-1] if parts else ""
+            print(last_part)
+
+            new_path = self.dir_or_file + last_part + '.asm'
+            f = open(new_path, 'w+')
+            for line in self.asm_code:
+                f.write(line + '\n')
+            f.close()
+
+
+    def bootstrap(self):
+        self.write_asm('@256')
+        self.write_asm('D=A')
+        self.write_asm('@SP')
+        self.write_asm('M=D')
+        self.call_command()
+
+
+    def call_command(self):
+        args = 0
+        func_name = 'Sys.init'
+
+        self.write_asm(f'@return_address_{self.global_uid}')
+        self.write_asm('D=A')
+        self.write_asm('@SP')
+        self.write_asm('A=M')
+        self.write_asm('M=D')
+
+        self.write_asm('@SP')
+        self.write_asm('M=M+1')
+
+
+        # положить на стек LCL ARG THIS THAT
+        for segment in ['@LCL', '@ARG', '@THIS', '@THAT']:
+            self.write_asm(segment) #LCL
+            self.write_asm('D=M')
+
+            self.write_asm('@SP')
+            self.write_asm('A=M')
+            self.write_asm('M=D')
+
+            self.write_asm('@SP')
+            self.write_asm('M=M+1')
+
+        # установка ARG
+        # ARG = SP - (5 + m)
+        self.write_asm(f'@{args}')
+        self.write_asm(f'D=A')
+        self.write_asm(f'@5')
+        self.write_asm('D=D+A')
+
+        self.write_asm('@SP')
+        self.write_asm('D=M-D')
+
+        self.write_asm('@ARG')
+        self.write_asm('M=D')
+
+
+        # установка LCL
+        # LCL = SP
+
+        self.write_asm('@SP')
+        self.write_asm('D=M')
+
+        self.write_asm('@LCL')
+        self.write_asm('M=D')
+
+        self.write_asm(f'@{func_name}')
+        self.write_asm('0;JMP')
+
+        self.write_asm(f'(return_address_{self.global_uid})')
+
+
 
     def translate(self):
         for file in self.files:
@@ -295,8 +369,9 @@ class virtual_machine:
     def function_commands(self, parts):
         if parts[0] == 'function':
             self.current_function_name_for_prefix = parts[1]
+            
             self.write_asm(f'({parts[1]})')
-            self.write_asm(f'@{parts[2]}')
+            self.write_asm(f'@{parts[2]}') #2 local vars
             self.write_asm('D=A')
             self.write_asm('@R13')
             self.write_asm('M=D')
@@ -320,5 +395,150 @@ class virtual_machine:
             self.write_asm('0;JMP')
 
             self.write_asm(f'(END_{self.global_uid})')
+
+        if parts[0] == 'call':
+            # положить на стек адресс возврата
+            self.write_asm(f'@return_address_{self.global_uid}')
+            self.write_asm('D=A')
+            self.write_asm('@SP')
+            self.write_asm('A=M')
+            self.write_asm('M=D')
+
+            self.write_asm('@SP')
+            self.write_asm('M=M+1')
+
+
+            # положить на стек LCL ARG THIS THAT
+            for segment in ['@LCL', '@ARG', '@THIS', '@THAT']:
+                self.write_asm(segment) #LCL
+                self.write_asm('D=M')
+
+                self.write_asm('@SP')
+                self.write_asm('A=M')
+                self.write_asm('M=D')
+
+                self.write_asm('@SP')
+                self.write_asm('M=M+1')
+
+            # установка ARG
+            # ARG = SP - (5 + m)
+            self.write_asm(f'@{parts[2]}')
+            self.write_asm(f'D=A')
+            self.write_asm(f'@5')
+            self.write_asm('D=D+A')
+
+            self.write_asm('@SP')
+            self.write_asm('D=M-D')
+
+            self.write_asm('@ARG')
+            self.write_asm('M=D')
+
+
+            # установка LCL
+            # LCL = SP
+
+            self.write_asm('@SP')
+            self.write_asm('D=M')
+
+            self.write_asm('@LCL')
+            self.write_asm('M=D')
+
+            self.write_asm(f'@{parts[1]}')
+            self.write_asm('0;JMP')
+
+            self.write_asm(f'(return_address_{self.global_uid})')
+
+
+        if parts[0] == 'return':
+            # нужно сохранить доступ к фрейму
+            self.write_asm('@LCL')
+            self.write_asm('D=M')
+            self.write_asm('@frame')
+            self.write_asm('M=D')
+
+
+            # берем адрес возврата и сохраняем его
+            self.write_asm('@frame')
+            self.write_asm('D=M')
+            self.write_asm('@5')
+            self.write_asm('D=D-A')
+            self.write_asm('A=D')
+            self.write_asm('D=M')
+
+
+            self.write_asm('@R13')
+            self.write_asm('M=D')
+
+            # передвигаем результат в ARG
+            self.write_asm('@SP')
+            self.write_asm('M=M-1')
+            self.write_asm('@SP')
+            self.write_asm('A=M')
+            self.write_asm('D=M')
+
+            self.write_asm('@ARG')
+            self.write_asm('A=M')
+            self.write_asm('M=D')
+
+            # SP = ARG + 1
+            self.write_asm('@ARG')
+            self.write_asm('D=M+1')
+
+            self.write_asm('@SP')
+            self.write_asm('M=D')
+
+
+            # востановление указателей 
+            for index, segment in enumerate(['@THAT', '@THIS', '@ARG', '@LCL']):
+                self.write_asm('@frame')
+                self.write_asm('D=M')
+                self.write_asm(f'@{index + 1}')
+                self.write_asm('D=D-A')
+
+                self.write_asm('A=D')
+                self.write_asm('D=M')
+                self.write_asm(segment)
+                self.write_asm('M=D')
+
+            self.write_asm('@R13')
+            self.write_asm('A=M')
+            self.write_asm('0;JMP')
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
