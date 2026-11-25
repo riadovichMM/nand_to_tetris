@@ -1,0 +1,59 @@
+class Main {
+    function int max(int a, int b) {
+        var int result;
+        if (a > b) {
+            let result = a;
+        } else {
+            let result = b;
+        }
+        return result;
+    }
+}
+
+function Main.max 1
+push argument 0
+push argument 1
+gt
+
+if-goto IF_TRUE
+goto IF_FALSE
+
+label IF_TRUE
+push argument 0
+pop local 0
+goto IF_END
+
+label IF_FALSE
+push argument 1
+pop local 0
+
+label IF_END
+push local 0
+return
+
+
+----------------------------------------------------
+
+class Main {
+    function int sum(int n) {
+        var int i, total;
+        let i = 0;
+        let total = 0;
+        while (i < n) {
+            let total = total + i;
+            let i = i + 1;
+        }
+        return total;
+    }
+}
+
+function Main.sum 2
+push constant 0
+pop local 0
+push constant 0
+pop local 1
+
+label WHILE_LOOP
+push local 0
+push argument 0
+lt
